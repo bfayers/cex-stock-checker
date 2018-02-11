@@ -1,5 +1,13 @@
 {
-    "pb_api_key": "your_pushbullet_api_key",
-    "_comment": "Below is a list of CeX SKUs seperated by semicolons. below means: 3ds XL; Nintendo Switch",
-    "item_list": "04549650XLRB02;0454964NS32GR01"
+    "pb_api_key": "your_pb_api_key_here",
+    "items": {
+        "skus": [
+            "04549650XLRB02",
+            "0454964NS32GR01"
+        ],
+        "stocks": [
+            "no",
+            "no"
+        ]
+    }
 }
