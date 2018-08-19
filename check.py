@@ -5,18 +5,19 @@ import re
 
 
 def check_stock(sku,stock):
-    r = requests.get("https://uk.webuy.com/product.php?sku={}".format(sku))
+    r = requests.get("https://wss2.cex.uk.webuy.io/v3/boxes/{}/detail".format(sku))
     rt = r.text
-    if "buy this item" in rt and stock == "no":
+    rt = json.loads(rt)
+    if rt['response']['data']['boxDetails'][0]['outOfStock'] == 0 and stock == "no":
         #print("In stock, new known")
         return "isNK"
-    elif "buy this item" in rt and stock == "yes":
+    elif rt['response']['data']['boxDetails'][0]['outOfStock'] == 0 and stock == "yes":
         #print("In stock, pre known")
         return "isPK"
-    elif "buy this item" not in rt and stock == "yes":
+    elif rt['response']['data']['boxDetails'][0]['outOfStock'] == 1 and stock == "yes":
         #print("Was in stock, now out, new known")
         return "wisNoNK"
-    elif "buy this item" not in rt and stock == "no":
+    elif rt['response']['data']['boxDetails'][0]['outOfStock'] == 1 and stock == "no":
         #print("Not in stock, pre known")
         return "nisPK"
 
@@ -34,17 +35,15 @@ notStocked = []
 for i in items:
     stock = stocks[items.index(i)]
     result = check_stock(i, stock)
-    reS = "(?<=\<title\>)(.*)(?= - CeX \(UK\): - Buy, Sell, Donate\<\/title\>)"
-    itemName = requests.get("https://uk.webuy.com/product.php?sku={}".format(i))
-    itemName = itemName.text
-    try:
-        itemName = re.search(reS, itemName).group(0)
-    except:
-        itemName = "Couldn't Parse Name"
+    itemData = requests.get("https://wss2.cex.uk.webuy.io/v3/boxes/{}/detail".format(i))
+    itemData = json.loads(itemData.text)
+    itemName = itemData['response']['data']['boxDetails'][0]['boxName']
+    itemPrice = itemData['response']['data']['boxDetails'][0]['sellPrice']
+    itemPrice = "£"+str(itemPrice)
     if result == "isNK":
         #In stock, new known
         #print("{} is now in stock".format(i))
-        pb.push_note("CEX Stock Alert", "Item \"{}\" Detected In Stock https://uk.webuy.com/product.php?sku={}".format(itemName, i))
+        pb.push_note("CEX Stock Alert", "Item \"{}\" Detected In Stock For {} https://uk.webuy.com/product-detail/?id={}".format(itemName, itemPrice, i))
         stocked.append(i)
     elif result == "isPK":
         #In stock, pre known
@@ -52,7 +51,7 @@ for i in items:
     elif result == "wisNoNK":
         #Was in stock, now out, new known
         #print("{} is now out of stock".format(i))
-        pb.push_note("CEX Stock Alert", "Item \"{}\" Detected Out Of Stock https://uk.webuy.com/product.php?sku={}".format(itemName, i))
+        pb.push_note("CEX Stock Alert", "Item \"{}\" Detected Out Of Stock https://uk.webuy.com/product-detail/?id={}".format(itemName, i))
         notStocked.append(i)
     elif result == "nisPK":
         #Not in stock, pre known
